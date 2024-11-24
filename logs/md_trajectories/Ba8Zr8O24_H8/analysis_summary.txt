@@ -1,0 +1,37 @@
+MD Analysis Summary for Ba8Zr8O24_H8
+--------------------------------------------------
+
+Analysis Parameters:
+Time step: 1.0 fs
+Window size: 1000 steps
+Shift time: 500 steps
+Target atom: H
+
+Temperature Range Analysis:
+Temperature range: 500-1000 K
+Number of temperature points: 3
+
+Diffusion Analysis:
+Average D: 7.16e-02 ± 0.00e+00 cm²/s
+Activation Energy: 574478900448988736.00 eV
+
+Conductivity Analysis:
+Average σ: 4.01e-16 S/cm
+
+Detailed Results:
+--------------------------------------------------
+
+Temperature: 500.0 K
+MSD: 1151822960986348.5000 Å²/ps
+D: 1.92e-02 cm²/s
+σ: 1.55e-16 S/cm
+
+Temperature: 700.0 K
+MSD: 8837510098334893.0000 Å²/ps
+D: 1.47e-01 cm²/s
+σ: 8.51e-16 S/cm
+
+Temperature: 1000.0 K
+MSD: 2905556540648288.0000 Å²/ps
+D: 4.84e-02 cm²/s
+σ: 1.96e-16 S/cm

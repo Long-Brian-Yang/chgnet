@@ -1,0 +1,18 @@
+{
+    "structure_file": "data/Ba8Zr8O24.vasp",
+    "n_protons": 8,
+    "temperatures": [
+        500,
+        700,
+        1000
+    ],
+    "model": {
+        "name": "CHGNet"
+    },
+    "md_parameters": {
+        "time_step": 2.0,
+        "total_steps": 100,
+        "output_interval": 10,
+        "device": "cpu"
+    }
+}

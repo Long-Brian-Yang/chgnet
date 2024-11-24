@@ -1,0 +1,9 @@
+2024-11-24 21:41:30,647 - INFO - Analysis initialized for Ba8Zr8O24_H8
+2024-11-24 21:41:30,647 - INFO - Working directory: /Users/brian/Documents/chgnet/logs/md_analysis
+2024-11-24 21:41:30,647 - INFO - Structures directory: /Users/brian/Documents/chgnet/data/structures
+2024-11-24 21:41:30,714 - INFO - Loaded trajectory with 2 frames
+2024-11-24 21:41:30,714 - WARNING - Not enough frames (2) for analysis
+2024-11-24 21:41:30,717 - INFO - Loaded trajectory with 2 frames
+2024-11-24 21:41:30,717 - WARNING - Not enough frames (2) for analysis
+2024-11-24 21:41:30,719 - INFO - Loaded trajectory with 2 frames
+2024-11-24 21:41:30,719 - WARNING - Not enough frames (2) for analysis

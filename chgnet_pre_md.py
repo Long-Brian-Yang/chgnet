@@ -2,34 +2,37 @@ from __future__ import annotations
 import os
 import logging
 import numpy as np
+import warnings
+import json
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, List, Dict
-from ase import Atoms
-from ase.io import read, write, Trajectory
+from ase import Atoms, Atom
+from ase.io import read, write
 from ase.io.vasp import read_vasp
-from ase.md.langevin import Langevin
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
-from ase.units import fs
-from ase import Atom
-import matgl
-from matgl.ext.ase import PESCalculator
+from ase.io.trajectory import Trajectory
 from pymatgen.core import Structure
 from pymatgen.io.vasp import Poscar
 from pymatgen.io.ase import AseAtomsAdaptor
+
+from chgnet.model.model import CHGNet
+from chgnet.model.dynamics import MolecularDynamics
 from dataset_process import get_project_paths, DataProcessor
 
+warnings.filterwarnings("ignore", module="pymatgen")
+warnings.filterwarnings("ignore", module="ase")
 class MDSystem:
     """Run molecular dynamics simulations using M3GNet potential."""
     
     def __init__(
         self,
         config: dict,
-        model_name: str = "M3GNet-MP-2021.2.8-PES",
-        time_step: float = 1.0,  # fs
-        friction: float = 0.02,
+        model_name: str = "CHGNet",
+        model_version: str = None, # It can set any version of CHGNet
+        time_step: float = 2.0,  # fs
         total_steps: int = 100,
-        output_interval: int = 100
+        output_interval: int = 10,
+        use_device: str = "cpu" # "cpu" or "cuda"
     ):
         # Get paths and setup directories
         self.paths = get_project_paths()
@@ -39,19 +42,24 @@ class MDSystem:
         
         # Configuration
         self.config = config
+        self.model_name = model_name
+        self.model_version = model_version
         self.time_step = time_step
-        self.friction = friction
         self.total_steps = total_steps
         self.output_interval = output_interval
+        self.use_device = use_device
         
         # Setup environment and logging
         self.setup_environment()
         
-        # Initialize potential and calculator
-        self.potential = matgl.load_model(model_name)
-        self.calculator = PESCalculator(self.potential)
-        self.logger.info(f"Loaded potential model: {model_name}")
-        
+        # Initialize CHGNet model
+        if self.model_version:
+            self.model = CHGNet.load(self.model_version)  # 加载特定版本
+            self.logger.info(f"Loaded CHGNet model version {self.model_version}")
+        else:
+            self.model = CHGNet.load()  # 加载最新版本
+            self.logger.info("Loaded latest CHGNet model")
+
         # Initialize data processor
         self.data_processor = DataProcessor(config)
         
@@ -176,7 +184,8 @@ class MDSystem:
         # Read structure using ASE's VASP reader
         try:
             atoms = read_vasp(str(structure_file))
-            atoms.calc = self.calculator
+            # 转换为pymatgen Structure用于CHGNet
+            structure = self.atoms_adaptor.get_structure(atoms)
             
             self.logger.info(f"Loaded structure from {structure_file}")
             self.logger.info(f"Structure composition: {atoms.get_chemical_formula()}")
@@ -184,30 +193,32 @@ class MDSystem:
         except Exception as e:
             self.logger.error(f"Error loading structure from {structure_file}: {e}")
             raise
-        
-        # Initialize velocities
-        MaxwellBoltzmannDistribution(atoms, temperature_K=temperature)
-        
-        # Setup Langevin dynamics
-        dyn = Langevin(
-            atoms,
-            timestep=self.time_step * fs,
-            temperature_K=temperature,
-            friction=self.friction
-        )
-        
+
         # Setup trajectory file
         if traj_file is None:
             traj_file = struct_output_dir / f"MD_{int(temperature):04d}.traj"
-        traj = Trajectory(str(traj_file), 'w', atoms)
-        dyn.attach(traj.write, interval=self.output_interval)
+        log_file = struct_output_dir / f"MD_{int(temperature)}K.log"
         
+        # Setup CHGNet molecular dynamics
+        md = MolecularDynamics(
+            atoms=structure,
+            model=self.model,
+            ensemble="nvt",
+            temperature=temperature,  # K
+            timestep=self.time_step,  # fs
+            trajectory=str(traj_file),
+            logfile=str(log_file),
+            loginterval=self.output_interval,
+            use_device=self.use_device
+        )
+        
+
         # Run MD
         self.logger.info(f"Starting MD at {temperature}K for {struct_name}")
         self.logger.info(f"Total steps: {self.total_steps}, Output interval: {self.output_interval}")
         
         for step in range(1, self.total_steps + 1):
-            dyn.run(1)
+            md.run(1)
             if step % 1000 == 0:
                 temp = atoms.get_temperature()
                 self.logger.info(f"Step {step}/{self.total_steps}, Temperature: {temp:.1f}K")
@@ -258,7 +269,7 @@ class MDSystem:
 #     config = {
 #         'structures_dir': paths['structures_dir'],
 #         'file_path': paths['file_path'],
-#         'cutoff': 4.0,
+#         'cutoff': 5.0,
 #         'batch_size': 16,
 #         'split_ratio': [0.5, 0.1, 0.4],
 #         'random_state': 42
@@ -267,10 +278,12 @@ class MDSystem:
 #     # Initialize MD system
 #     md_system = MDSystem(
 #         config=config,
-#         time_step=1.0,
-#         friction=0.02,
-#         total_steps=20000,
-#         output_interval=100
+#         model_name="CHGNet",        # use CHGNet model
+#         model_version="0.3.0",      # use specific version
+#         time_step=2.0,              # fs
+#         total_steps=20000,          # 20000 steps
+#         output_interval=100,
+#         use_device='cpu'           # "cpu" or "cuda"
 #     )
     
 #     # Define temperatures
@@ -298,7 +311,7 @@ def main():
     config = {
         'structures_dir': paths['structures_dir'],
         'file_path': paths['file_path'],
-        'cutoff': 4.0,
+        'cutoff': 5.0,
         'batch_size': 16,
         'split_ratio': [0.5, 0.1, 0.4],
         'random_state': 42
@@ -307,27 +320,33 @@ def main():
     # Initialize MD system
     md_system = MDSystem(
         config=config,
-        time_step=1.0,
-        friction=0.02,
-        total_steps=50,  # 50 steps for testing
-        output_interval=10
+        model_name="CHGNet",        
+        model_version=None,      
+        time_step=2.0,              
+        total_steps=100,           
+        output_interval=10,
+        use_device='cpu'           
     )
-    
+
     # Test with specific structure
     structure_file = Path("data/Ba8Zr8O24.vasp")
-        
     print(f"\nTesting with structure: {structure_file}")
     
     # Test with single temperature
     temperatures = [500, 700, 1000]  # K
     
     try:
+        # 1. 创建材料目录
+        n_protons = 8  # 添加8个质子
+        material_dir = md_system.md_output_dir / f"{structure_file.stem}_H{n_protons}"
+        os.makedirs(material_dir, exist_ok=True)
+
         # 1. 读取初始结构
         atoms = read_vasp(str(structure_file))
         print(f"\nLoaded initial structure: {atoms.get_chemical_formula()}")
         
         # 2. 添加质子
-        n_protons = 8  # 添加8个质子
+
         atoms = md_system.add_protons(atoms, n_protons)
         
         # 3. 保存掺H结构
@@ -341,45 +360,44 @@ def main():
         
         for temp in temperatures:
             print(f"\nRunning MD at {temp}K...")
-            
-            # 创建特定温度的输出目录
-            temp_dir = md_system.md_output_dir / f"T_{temp}K"
+            # 在材料目录下创建温度目录
+            temp_dir = material_dir / f"T_{temp}K"
             os.makedirs(temp_dir, exist_ok=True)
             
-            # 定义轨迹文件路径
-            traj_file = temp_dir / f"MD_{temp}K.traj"
-            
             try:
-                # 运行MD
-                traj_path = md_system.run_md(
+                traj_file = md_system.run_md(
                     structure_file=hydrated_file,
                     temperature=temp,
-                    traj_file=traj_file
+                    traj_file=temp_dir / f"MD_{temp}K.traj"
                 )
-                
-                trajectories[temp] = traj_path
+                trajectories[temp] = traj_file
                 print(f"Completed MD at {temp}K")
-                print(f"Trajectory saved to: {traj_path}")
-                
-                # 保存最后一帧的结构
-                final_structure = temp_dir / f"FINAL_POSCAR_{temp}K"
-                final_atoms = read(traj_path, index=-1)
-                write(str(final_structure), final_atoms, format='vasp')
-                print(f"Final structure saved to: {final_structure}")
+                print(f"Trajectory saved to: {traj_file}")
                 
             except Exception as e:
                 print(f"Error running MD at {temp}K: {str(e)}")
                 continue
         
-        # 5. 打印总结
-        print("\nMD Simulation Summary:")
-        print("-" * 50)
-        print(f"Initial structure: {structure_file}")
-        print(f"Protons added: {n_protons}")
-        print(f"Temperatures simulated: {temperatures} K")
-        print("\nTrajectory files:")
-        for temp, traj in trajectories.items():
-            print(f"  {temp}K: {traj}")
+        # 5. 保存配置在材料目录下
+        config_info = {
+            'structure_file': str(structure_file),
+            'n_protons': n_protons,
+            'temperatures': temperatures,
+            'model': {
+                'name': md_system.model_name
+            },
+            'md_parameters': {
+                'time_step': md_system.time_step,
+                'total_steps': md_system.total_steps,
+                'output_interval': md_system.output_interval,
+                'device': md_system.use_device
+            }
+        }
+        
+        config_file = material_dir / 'md_config.json'
+        with open(config_file, 'w') as f:
+            json.dump(config_info, f, indent=4)
+        print(f"\nConfiguration saved to: {config_file}")
         
     except Exception as e:
         print(f"\nError in MD simulation: {str(e)}")
@@ -391,15 +409,19 @@ def main():
             'structure_file': str(structure_file),
             'n_protons': n_protons,
             'temperatures': temperatures,
+            'model': {
+                'name': md_system.model_name,
+                'version': md_system.model_version
+            },
             'md_parameters': {
                 'time_step': md_system.time_step,
-                'friction': md_system.friction,
                 'total_steps': md_system.total_steps,
-                'output_interval': md_system.output_interval
+                'output_interval': md_system.output_interval,
+                'device': md_system.use_device
             }
         }
         
-        import json
+
         config_file = md_system.md_output_dir / 'md_config.json'
         with open(config_file, 'w') as f:
             json.dump(config_info, f, indent=4)

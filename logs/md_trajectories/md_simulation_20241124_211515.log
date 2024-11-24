@@ -1,0 +1,27 @@
+2024-11-24 21:15:15,701 - INFO - Working directory: /Users/brian/Documents/chgnet/logs/md_trajectories
+2024-11-24 21:15:15,701 - INFO - Structures directory: /Users/brian/Documents/chgnet/data/structures
+2024-11-24 21:15:16,126 - INFO - Loaded latest CHGNet model
+2024-11-24 21:15:16,128 - INFO - Added proton near O atom 16 at position: [ 2.096  2.096 -0.98 ]
+2024-11-24 21:15:16,128 - INFO - Created OH bond with length: 0.980 Å
+2024-11-24 21:15:16,129 - INFO - Added proton near O atom 17 at position: [3.076 2.096 4.192]
+2024-11-24 21:15:16,129 - INFO - Created OH bond with length: 0.980 Å
+2024-11-24 21:15:16,129 - INFO - Added proton near O atom 18 at position: [ 2.096       6.59790321 -0.92970963]
+2024-11-24 21:15:16,130 - INFO - Created OH bond with length: 0.980 Å
+2024-11-24 21:15:16,130 - INFO - Added proton near O atom 19 at position: [2.096 7.268 4.192]
+2024-11-24 21:15:16,130 - INFO - Created OH bond with length: 0.980 Å
+2024-11-24 21:15:16,130 - INFO - Added proton near O atom 20 at position: [ 6.59790321  2.096      -0.92970963]
+2024-11-24 21:15:16,130 - INFO - Created OH bond with length: 0.980 Å
+2024-11-24 21:15:16,131 - INFO - Added proton near O atom 21 at position: [7.268 2.096 4.192]
+2024-11-24 21:15:16,131 - INFO - Created OH bond with length: 0.980 Å
+2024-11-24 21:15:16,132 - INFO - Added proton near O atom 22 at position: [ 6.68808332  6.68808332 -0.80016665]
+2024-11-24 21:15:16,132 - INFO - Created OH bond with length: 0.980 Å
+2024-11-24 21:15:16,132 - INFO - Added proton near O atom 23 at position: [6.98096465 6.98096465 4.192     ]
+2024-11-24 21:15:16,132 - INFO - Created OH bond with length: 0.980 Å
+2024-11-24 21:15:16,133 - INFO - Added 8 protons forming OH groups
+2024-11-24 21:15:16,133 - INFO - New composition: H8Ba8O24Zr8
+2024-11-24 21:15:16,135 - INFO - Loaded structure from /Users/brian/Documents/chgnet/logs/md_trajectories/Ba8Zr8O24_H8.vasp
+2024-11-24 21:15:16,135 - INFO - Structure composition: H8Ba8O24Zr8
+2024-11-24 21:15:16,136 - INFO - Loaded structure from /Users/brian/Documents/chgnet/logs/md_trajectories/Ba8Zr8O24_H8.vasp
+2024-11-24 21:15:16,136 - INFO - Structure composition: H8Ba8O24Zr8
+2024-11-24 21:15:16,136 - INFO - Loaded structure from /Users/brian/Documents/chgnet/logs/md_trajectories/Ba8Zr8O24_H8.vasp
+2024-11-24 21:15:16,136 - INFO - Structure composition: H8Ba8O24Zr8
