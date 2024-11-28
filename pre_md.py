@@ -54,10 +54,10 @@ class MDSystem:
         
         # Initialize CHGNet model
         if self.model_version:
-            self.model = CHGNet.load(self.model_version)  # 加载特定版本
+            self.model = CHGNet.load(self.model_version)
             self.logger.info(f"Loaded CHGNet model version {self.model_version}")
         else:
-            self.model = CHGNet.load()  # 加载最新版本
+            self.model = CHGNet.load()  
             self.logger.info("Loaded latest CHGNet model")
 
         # Initialize data processor
@@ -184,7 +184,7 @@ class MDSystem:
         # Read structure using ASE's VASP reader
         try:
             atoms = read_vasp(str(structure_file))
-            # 转换为pymatgen Structure用于CHGNet
+            # Transform ASE Atoms object to Pymatgen Structure object
             structure = self.atoms_adaptor.get_structure(atoms)
             
             self.logger.info(f"Loaded structure from {structure_file}")
@@ -360,19 +360,28 @@ def main():
         
         for temp in temperatures:
             print(f"\nRunning MD at {temp}K...")
-            # 在材料目录下创建温度目录
+            
+            # Create temperature directory
             temp_dir = material_dir / f"T_{temp}K"
             os.makedirs(temp_dir, exist_ok=True)
             
             try:
-                traj_file = md_system.run_md(
+                # Run MD simulation
+                traj_path = md_system.run_md(
                     structure_file=hydrated_file,
                     temperature=temp,
-                    traj_file=temp_dir / f"MD_{temp}K.traj"
+                    traj_file = temp_dir / f"MD_{temp}K.traj"
                 )
-                trajectories[temp] = traj_file
+                
+                trajectories[temp] = traj_path
                 print(f"Completed MD at {temp}K")
-                print(f"Trajectory saved to: {traj_file}")
+                print(f"Trajectory saved to: {traj_path}")
+                
+                # Save final structure
+                final_structure = temp_dir / f"FINAL_POSCAR_{temp}K"
+                final_atoms = read(traj_path, index=-1)
+                write(str(final_structure), final_atoms, format='vasp')
+                print(f"Final structure saved to: {final_structure}")
                 
             except Exception as e:
                 print(f"Error running MD at {temp}K: {str(e)}")

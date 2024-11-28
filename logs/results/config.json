@@ -1,0 +1,18 @@
+{
+    "batch_size": 32,
+    "num_epochs": 5,
+    "learning_rate": 0.001,
+    "split_ratio": [
+        0.7,
+        0.1,
+        0.2
+    ],
+    "random_state": 42,
+    "max_samples": null,
+    "frozen_layers": [
+        "atom_embedding",
+        "bond_embedding",
+        "angle_embedding"
+    ],
+    "train_composition": true
+}
